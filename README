@@ -26,7 +26,7 @@ SYNOPSIS
             $q->content_type('text/plain');
             $q->header_out('MyHeader' => 'MyValue');
 
-            # do other stuff
+            # do other stuff and then ...
             return $content;
         }
 
@@ -37,17 +37,26 @@ DESCRIPTION
     CGI::Application in a pure mod_perl environment. CGI::Application
     assumes that you use CGI.pm, but I wanted to avoid it's bloat and have
     access to the performance of the Apache::* modules so along came this
-    plugin. At the current moment it only does two things:
+    plugin. At the current moment it only does three things:
 
-    Use Apache::Request as the "$self->query" object thus avoiding the
-    creation of the CGI.pm object.
-    Override the way CGI::Application creates and prints it's HTTP headers.
-    Since it was using CGI.pm's "header()" and "redirect()" method's we
-    needed an alternative. So now we use the "Apache->send_http_header()"
-    method. This has a few additional benefits other than just not using
-    CGI.pm. It means that we can use other Apache::* modules that might also
-    create outgoing headers (e.g. Apache::Cookie) without CGI::Application
-    clobbering them.
+    1   Provide a very simple "handler()" method that will create and
+        instance of your application class and "run()" it.
+
+    2   Use Apache::Request as the "$self->query" object thus avoiding the
+        creation of the CGI.pm object.
+
+    3   Override the way CGI::Application creates and prints it's HTTP
+        headers. Since it was using CGI.pm's "header()" and "redirect()"
+        method's we needed an alternative. So now we use the
+        "Apache->send_http_header()" method. This has a few additional
+        benefits other than just not using CGI.pm. It means that we can use
+        other Apache::* modules that might also create outgoing headers
+        (e.g. Apache::Cookie) without CGI::Application clobbering them.
+
+        And if any other headers have been added using CGI::Application's
+        "header_add()" or "header_props" methods then those are also dealt
+        with in the proper manner so that they will also be sent to the
+        client.
 
 EXPORTED METHODS
     This module uses Exporter to provide methods to your application module.
@@ -90,8 +99,8 @@ EXPORTED METHODS
   _send_headers()
     I didn't like the idea of exporting this private method (I'd rather
     think it was a 'protected' not 'private) but right now it's the only way
-    to have any say in how the HTTP headers are created. Please see "HTTP
-    Headers" for more details.
+    to control how the HTTP headers are created. Please see "HTTP Headers"
+    for more details.
 
 HTTP Headers
     We encourage you to learn the mod_perl way of manipulating headers and
@@ -103,7 +112,7 @@ HTTP Headers
     HTTP cookies should now be created using Apache::Cookie and it's
     "bake()" method not with "header_add()" or "header_props()".
 
-    You can still do the following to create a cookie
+    You can still do this to create a cookie
 
         my $cookie = CGI::Cookie->new(
             -name  => 'foo',
@@ -121,7 +130,7 @@ HTTP Headers
         $cookie->bake();
 
   Redirects
-    You can still do the following to perform an HTTP redirect
+    You can still do this to perform an HTTP redirect
 
         $self->header_props( uri => $some_url);
         $self->header_type('redirect');
@@ -189,7 +198,7 @@ CONTRIBUTORS
 
     William McKee <william@knowmad.com>
     Cees Hek <ceeshek@gmail.com>
-    Drew Taylor <taylor.andrew.j@gmail.com>
+    Drew Taylor <drew@drewtaylor.com>
     Ron Savage <ron@savage.net.au>
 
 SEE ALSO

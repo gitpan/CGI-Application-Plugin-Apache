@@ -7,7 +7,7 @@ use Apache::Reload;
 use Apache::Constants qw(:common :response);
 use Carp;
 
-$CGI::Application::Plugin::Apache::VERSION = 0.08;
+$CGI::Application::Plugin::Apache::VERSION = 0.09;
 
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
 
@@ -268,7 +268,7 @@ CGI::Application::Plugin::Apache - Allow CGI::Application to use Apache::* modul
         $q->content_type('text/plain');
         $q->header_out('MyHeader' => 'MyValue');
 
-        # do other stuff
+        # do other stuff and then ...
         return $content;
     }
 
@@ -279,19 +279,32 @@ CGI::Application::Plugin::Apache - Allow CGI::Application to use Apache::* modul
 This plugin helps to try and fix some of the annoyances of using L<CGI::Application> in
 a pure mod_perl environment. L<CGI::Application> assumes that you use L<CGI.pm|CGI>, but I wanted
 to avoid it's bloat and have access to the performance of the Apache::* modules so along
-came this plugin. At the current moment it only does two things:
+came this plugin. At the current moment it only does three things:
 
 =over
 
-=item Use Apache::Request as the C<< $self->query >> object thus avoiding the creation
+=item 1
+
+Provide a very simple C<< handler() >> method that will create and instance of your application
+class and C<< run() >> it.
+
+=item 2
+
+Use Apache::Request as the C<< $self->query >> object thus avoiding the creation
 of the CGI.pm object.
 
-=item Override the way L<CGI::Application> creates and prints it's HTTP headers. Since it was using
+=item 3
+
+Override the way L<CGI::Application> creates and prints it's HTTP headers. Since it was using
 L<CGI.pm|CGI>'s C<< header() >> and C<< redirect() >> method's we needed an alternative. So now we
 use the C<< Apache->send_http_header() >> method. This has a few additional benefits other
 than just not using L<CGI.pm|CGI>. It means that we can use other Apache::* modules that might
 also create outgoing headers (e.g. L<Apache::Cookie>) without L<CGI::Application> clobbering
-them.
+them. 
+
+And if any other headers have been added using L<CGI::Application>'s C<< header_add() >> or
+C<< header_props >> methods then those are also dealt with in the proper manner so that they
+will also be sent to the client.
 
 =back
 
@@ -335,7 +348,7 @@ creates and returns a new L<Apache::Request> object from C<< Apache->request >>.
 =head2 _send_headers()
 
 I didn't like the idea of exporting this private method (I'd rather think it was a 'protected'
-not 'private) but right now it's the only way to have any say in how the HTTP headers are created.
+not 'private) but right now it's the only way to control how the HTTP headers are created.
 Please see L<"HTTP Headers"> for more details.
 
 =head1  HTTP Headers
@@ -349,7 +362,7 @@ backward compatibility as possible.
 HTTP cookies should now be created using L<Apache::Cookie> and it's C<< bake() >> method not with 
 C<< header_add() >> or C<< header_props() >>.
 
-You can still do the following to create a cookie
+You can still do this to create a cookie
 
     my $cookie = CGI::Cookie->new(
         -name  => 'foo',
@@ -368,7 +381,7 @@ But now we encourage you to do the following
 
 =head2 Redirects 
 
-You can still do the following to perform an HTTP redirect
+You can still do this to perform an HTTP redirect
 
     $self->header_props( uri => $some_url);
     $self->header_type('redirect');
@@ -436,7 +449,7 @@ The following people have contributed to this module either through docs, code, 
 
 =item Cees Hek <ceeshek@gmail.com>
 
-=item Drew Taylor <taylor.andrew.j@gmail.com>
+=item Drew Taylor <drew@drewtaylor.com>
 
 =item Ron Savage <ron@savage.net.au>
 
