@@ -1,0 +1,11 @@
+Build.PL
+Changes
+lib/CGI/Application/Plugin/Apache.pm
+MANIFEST			This list of files
+META.yml
+README
+t/01.t
+t/02.t
+t/conf/extra.conf.in
+t/lib/ApachePlugin/Test.pm
+t/lib/cgiapp_apache_simple_test.pm

@@ -1,0 +1,4 @@
+<Location /test1>
+    SetHandler  perl-script
+    PerlHandler ApachePlugin::Test
+</Location>
