@@ -1,37 +1,56 @@
 package CGI::Application::Plugin::Apache;
 use strict;
 use base 'Exporter';
-use Apache;
 use Apache::Request;
-use Apache::Reload;
-use Apache::Constants qw(:common :response);
-use Carp;
 
-$CGI::Application::Plugin::Apache::VERSION = 0.09;
-
+$CGI::Application::Plugin::Apache::VERSION = '0.10';
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
+my $MP2;
 
 BEGIN {
     # only do stuff if we are running under mod_perl
     if( $ENV{MOD_PERL} ) {
         @EXPORT_OK      = qw(handler cgiapp_get_query _send_headers);
         %EXPORT_TAGS    = (all => \@EXPORT_OK);
+        require mod_perl;
+        $MP2 = $mod_perl::VERSION >= 1.99 ? 1 : 0;
+        # if we are under mod_perl 2
+        if( $MP2 ) {
+            require Apache::Const;
+            require Apache::RequestRec;
+            Apache::Const->import(-compile => qw(OK REDIRECT))
+        } else {
+            require Apache::Constants;
+            Apache::Constants->import(qw(OK REDIRECT))
+        }
     } else {
         @EXPORT_OK      = ();
         %EXPORT_TAGS    = (all => []);
     }
 }
 
-sub handler ($$) {
+sub handler : method {
     my ($self, $r) = @_;
     $self->new()->run();
-    return $r->status() || OK;
+    if( $MP2 ) {
+        return Apache::OK();
+    } else {
+        return Apache::Constants::OK();
+    }
 }
 
 sub cgiapp_get_query {
     my $self = shift;
-    my $apr = Apache::Request->new( Apache->request() );
-    return $apr;
+    my $r = Apache->request();
+    # if we are in compatibility mode
+    my $query;
+    if(lc($r->dir_config('CAPA_CGI_Compat')) eq 'on') {
+        require CGI::Application::Plugin::Apache::Request;
+        $query = CGI::Application::Plugin::Apache::Request->new( $r );
+    } else {
+        $query = Apache::Request->new( $r );
+    }
+    return $query;
 }
 
 sub _send_headers {
@@ -40,16 +59,27 @@ sub _send_headers {
     my $header_type = $self->header_type();
     my %props = $self->header_props();
                                                                                                                                        
+    # if we are redirecting set the status
+    if($header_type eq 'redirect') {
+        if( $MP2 ) {
+            $q->status(Apache::REDIRECT());
+        } else {
+            $q->status(Apache::Constants::REDIRECT());
+        }
+    }
     # if we are redirecting try and do it with header_out
     if ( $header_type eq 'redirect' || $header_type eq 'header' ) {
-        $q->status(REDIRECT)
-            if($header_type eq 'redirect');
         # if we have any header props then use our CGI compat to handle them
         if( scalar(%props) ) {
             _handle_cgi_header_props($q, %props);
         } else {
             # else use to Apache send the header
-            $q->send_http_header('text/html');
+            if( $MP2 ) {
+                $q->content_type('text/html')
+                    unless $q->content_type();
+            } else {
+                $q->send_http_header('text/html')
+            }
         }
     } elsif( $header_type eq 'none' ) {
         # don't do anything here either...
@@ -89,13 +119,14 @@ sub _handle_cgi_header_props {
 
     $q->content_type($type);
     $q->status($status) if($status);
+    
     if( $target ) {
-        $q->header_out('Window-Target' => $target);
+        $q->headers_out->{'Window-Target'} = $target;
     }
     if ( $p3p ) {
         $p3p = join ' ',@$p3p if ref($p3p) eq 'ARRAY';
-        $q->header_out('P3P' => qq(policyref="/w3c/p3p.xml")); 
-        $q->header_out('CP' => $p3p); 
+        $q->headers_out->{'P3P'} = qq(policyref="/w3c/p3p.xml"); 
+        $q->headers_out->{'CP'} = $p3p; 
     }
     # send all the cookies -- there may be several
     if ( $cookie ) {
@@ -112,19 +143,19 @@ sub _handle_cgi_header_props {
     }
     # if the user indicates an expiration time, then we need an Expires
     if( $expires ) {
-        $q->header_out('Expires' => _expires($expires,'http'));
+        $q->headers_out('Expires' => _expires($expires,'http'));
     }
     # if there's a location...this is generally done for redirects but there may be other reasons
     if( $uri ) {
-        $q->header_out('Location' => $uri);
+        $q->headers_out->{'Location'} = $uri;
     }
     if( $attachment ) {
-        $q->header_out('Content-Disposition' => qq(attachment; filename="$attachment"));
+        $q->headers_out->{'Content-Disposition'} = qq(attachment; filename="$attachment");
     }
     foreach my $key (keys %$other) {
-        $q->header_out(ucfirst($key) => $other->{$key});
+        $q->headers_out->{ucfirst($key)} = $other->{$key};
     }
-    $q->send_http_header();
+    $q->send_http_header() unless($MP2);
     return '';
 }
 
@@ -232,7 +263,6 @@ sub _unescapeHTML {
 }
 
 
-
 1;
 
 __END__
@@ -268,7 +298,7 @@ CGI::Application::Plugin::Apache - Allow CGI::Application to use Apache::* modul
         $q->content_type('text/plain');
         $q->header_out('MyHeader' => 'MyValue');
 
-        # do other stuff and then ...
+        # do other stuff
         return $content;
     }
 
@@ -277,34 +307,21 @@ CGI::Application::Plugin::Apache - Allow CGI::Application to use Apache::* modul
 =head1 DESCRIPTION
 
 This plugin helps to try and fix some of the annoyances of using L<CGI::Application> in
-a pure mod_perl environment. L<CGI::Application> assumes that you use L<CGI.pm|CGI>, but I wanted
+a pure mod_perl (1.0 or 2.0) environment. L<CGI::Application> assumes that you use L<CGI.pm|CGI>, but I wanted
 to avoid it's bloat and have access to the performance of the Apache::* modules so along
-came this plugin. At the current moment it only does three things:
+came this plugin. At the current moment it only does two things:
 
 =over
 
-=item 1
-
-Provide a very simple C<< handler() >> method that will create and instance of your application
-class and C<< run() >> it.
-
-=item 2
-
-Use Apache::Request as the C<< $self->query >> object thus avoiding the creation
+=item Use Apache::Request as the C<< $self->query >> object thus avoiding the creation
 of the CGI.pm object.
 
-=item 3
-
-Override the way L<CGI::Application> creates and prints it's HTTP headers. Since it was using
+=item Override the way L<CGI::Application> creates and prints it's HTTP headers. Since it was using
 L<CGI.pm|CGI>'s C<< header() >> and C<< redirect() >> method's we needed an alternative. So now we
 use the C<< Apache->send_http_header() >> method. This has a few additional benefits other
 than just not using L<CGI.pm|CGI>. It means that we can use other Apache::* modules that might
 also create outgoing headers (e.g. L<Apache::Cookie>) without L<CGI::Application> clobbering
-them. 
-
-And if any other headers have been added using L<CGI::Application>'s C<< header_add() >> or
-C<< header_props >> methods then those are also dealt with in the proper manner so that they
-will also be sent to the client.
+them.
 
 =back
 
@@ -348,7 +365,7 @@ creates and returns a new L<Apache::Request> object from C<< Apache->request >>.
 =head2 _send_headers()
 
 I didn't like the idea of exporting this private method (I'd rather think it was a 'protected'
-not 'private) but right now it's the only way to control how the HTTP headers are created.
+not 'private) but right now it's the only way to have any say in how the HTTP headers are created.
 Please see L<"HTTP Headers"> for more details.
 
 =head1  HTTP Headers
@@ -362,7 +379,7 @@ backward compatibility as possible.
 HTTP cookies should now be created using L<Apache::Cookie> and it's C<< bake() >> method not with 
 C<< header_add() >> or C<< header_props() >>.
 
-You can still do this to create a cookie
+You can still do the following to create a cookie
 
     my $cookie = CGI::Cookie->new(
         -name  => 'foo',
@@ -381,7 +398,7 @@ But now we encourage you to do the following
 
 =head2 Redirects 
 
-You can still do this to perform an HTTP redirect
+You can still do the following to perform an HTTP redirect
 
     $self->header_props( uri => $some_url);
     $self->header_type('redirect');

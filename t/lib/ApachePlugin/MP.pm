@@ -1,4 +1,4 @@
-package ApachePlugin::Test;
+package ApachePlugin::MP;
 use base 'CGI::Application';
 use strict;
 use warnings;
@@ -12,23 +12,33 @@ my $content = "<h1>HELLO THERE</h1>";
 sub setup {
     my $self = shift;
     $self->start_mode('header');
-    $self->run_modes(
-        header                  => 'header',
-        redirect                => 'redirect',
-        redirect2               => 'redirect2',
-        add_header              => 'add_header',
-        cgi_cookie              => 'cgi_cookie',
-        apache_cookie           => 'apache_cookie',
-        baking_apache_cookie    => 'baking_apache_cookie',
-        cgi_and_apache_cookies  => 'cgi_and_apache_cookies',
-        cgi_and_baked_cookies   => 'cgi_and_baked_cookies',
-    );
+    $self->run_modes([qw(
+        query_obj
+        header
+        redirect
+        redirected_to
+        redirect_cookie
+        add_header
+        cgi_cookie
+        apache_cookie
+        baking_apache_cookie
+        cgi_and_apache_cookies
+        cgi_and_baked_cookies
+        cookies
+    )]);
+}
+
+sub query_obj {
+    my $self = shift;
+    return $content
+        . "<h3>Im in runmode query_obj</h3>"
+        . "obj is " . ref($self->query);
 }
 
 sub header {
     my $self = shift;
     $self->header_type('header');
-    return "<h1>HELLO THERE</h1>"
+    return $content
         . "<h3>Im in runmode header</h3>";
 }
 
@@ -36,17 +46,38 @@ sub redirect {
     my $self = shift;
     $self->header_type('redirect');
     $self->header_props(
-        -uri => '/test1?rm=redirect2',
+        -uri => '/mp?rm=redirected_to',
     );
-    return "<h1>HELLO THERE</h1>"
+    return $content
         . "<h3>Im in runmode redirect (should never see me)</h3>";
 }
 
-sub redirect2 {
+sub redirected_to {
     my $self = shift;
     $self->header_type('header');
-    return "<h1>HELLO THERE</h1>"
+    my %cookies = Apache::Cookie->fetch();
+    if($cookies{redirect_cookie}) {
+        my $value = $cookies{redirect_cookie}->value;
+        $content .= " cookie value = '$value'";
+    }
+    return $content
         . "<h3>Im in runmode redirect2</h3>";
+}
+
+sub redirect_cookie {
+    my $self = shift;
+    $self->header_type('redirect');
+    $self->header_props(
+        -uri => '/mp?rm=redirected_to',
+    );
+    my $cookie = Apache::Cookie->new(
+        $self->query,
+        -name    => 'redirect_cookie',
+        -value   => 'mmmm',
+    );
+    $cookie->bake;
+    return $content 
+        . "<h3>Im in runmode redirect_cookie</h3>";
 }
 
 sub add_header {
@@ -55,7 +86,7 @@ sub add_header {
     $self->header_add(
         -me => 'Myself and I', 
     );
-    return "<h1>HELLO THERE</h1>"
+    return $content
         . "<h3>Im in runmode add_header</h3>";
 }
 
@@ -69,7 +100,7 @@ sub cgi_cookie {
     $self->header_add(
         -cookie => $cookie,
     );
-    return "<h1>HELLO THERE</h1>"
+    return $content
         . "<h3>Im in runmode cgi_cookie</h3>";
 }
 
@@ -84,7 +115,7 @@ sub apache_cookie {
     $self->header_add(
         -cookie => $cookie,
     );
-    return "<h1>HELLO THERE</h1>"
+    return $content
         . "<h3>Im in runmode apache_cookie</h3>";
 }
 
@@ -97,7 +128,7 @@ sub baking_apache_cookie {
         -value   => 'yummiest',
     );
     $cookie->bake;
-    return "<h1>HELLO THERE</h1>"
+    return $content
         . "<h3>Im in runmode baking_apache_cookie</h3>";
 }
 
@@ -116,7 +147,7 @@ sub cgi_and_apache_cookies {
     $self->header_props(
         -cookie => [$cookie2, $cookie1],
     );
-    return "<h1>HELLO THERE</h1>"
+    return $content
         . "<h3>Im in runmode cgi_and_apache_cookies</h3>";
 }
 
@@ -136,8 +167,24 @@ sub cgi_and_baked_cookies {
         -cookie => $cookie1,
     );
     $cookie2->bake;
-    return "<h1>HELLO THERE</h1>"
+    return $content
         . "<h3>Im in runmode cgi_and_baked_cookies</h3>";
+}
+
+sub cookies {
+    my $self = shift;
+    $self->header_type('header');
+    my $cookie1 = CGI::Cookie->new(
+        -name    => 'cookie1',
+        -value   => 'mmmm',
+    );
+    my $cookie2 = CGI::Cookie->new(
+        -name    => 'cookie2',
+        -value   => 'tasty',
+    );
+    $self->header_props( -cookie => [ $cookie1, $cookie2 ]);
+    return $content
+        . "<h3>Im in runmode cookies</h3>";
 }
 
 1;

@@ -1,18 +1,8 @@
 --- #YAML:1.0
 name: CGI-Application-Plugin-Apache
-version: 0.09
+version: 0.10
 author:
   - Michael Peters <mpeters@plusthree.com>
-abstract: |-
-  Allow CGI::Application to use Apache::* modules without interference
+abstract: Allow CGI::Application to use Apache::* modules without interference
 license: perl
-requires:
-  Apache: 0
-  CGI::Application: 3.22
-  Exporter: 0
-  Test::More: 0
-provides:
-  CGI::Application::Plugin::Apache:
-    file: lib/CGI/Application/Plugin/Apache.pm
-    version: 0.09
-generated_by: Module::Build version 0.26
+generated_by: Module::Build version 0.2604, without YAML.pm

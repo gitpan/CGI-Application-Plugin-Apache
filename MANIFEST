@@ -1,12 +1,15 @@
 Build.PL
 Changes
 lib/CGI/Application/Plugin/Apache.pm
-MANIFEST			This list of files
+lib/CGI/Application/Plugin/Apache/Request.pm
 Makefile.PL
+MANIFEST			This list of files
 META.yml
 README
-t/01.t
-t/02.t
+t/cgi.t
+t/cgi_compat.t
 t/conf/extra.conf.in
-t/lib/ApachePlugin/Test.pm
-t/lib/cgiapp_apache_simple_test.pm
+t/lib/ApachePlugin/CGI.pm
+t/lib/ApachePlugin/CGI_compat.pm
+t/lib/ApachePlugin/MP.pm
+t/mod_perl.t

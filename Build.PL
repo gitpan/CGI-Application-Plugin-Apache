@@ -9,9 +9,18 @@ my $build = $build_pkg->new(
 	requires            => {
 		    'CGI::Application'  => 3.22,
 		    'Exporter'          => 0,
-            'Apache'            => 0,
+#            'Apache'            => 0,
             'Test::More'        => 0,
+            'Apache::Request'   => 0,
+            'Apache::Cookie'    => 0,
+#            'Apache::Constants' => 0,
+            'Apache::URI'       => 0,
+            'HTML::GenerateUtil'=> 0,
 		    },
+    build_requires      => {
+            'CGI::Cookie'       => 0,
+            
+            },
 	create_makefile_pl  => 'passthrough',
 	create_readme       => 1,
 	);

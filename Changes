@@ -1,9 +1,13 @@
 Revision history for Perl extension CGI::Application::Plugin::Apache
 
-0.09 (Nov 10, 2004)
-    - added Makefile.PL to MANIFEST so that CPAN could handle the 
-        install (CPANPLUS handled it just fine)
-    - minor documentation improvements
+0.10  ()
+    - Added CGI::Application::Plugin::Apache::Request wrapper around 
+        Apache::Request for some CGI.pm compatability
+    - mod_perl 2 compatability
+    - Added more tests
 
-0.08 (Nov 8, 2004)
+0.09 (Nov. 10, 2004)
+    - added Makefile.PL to MANIFEST 
+
+0.08 (Nov. 08, 2004)
     - First public release
