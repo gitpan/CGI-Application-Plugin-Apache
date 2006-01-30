@@ -2,12 +2,21 @@ package ApachePlugin::MP;
 use base 'CGI::Application';
 use strict;
 use warnings;
-use Apache::Reload;
 use CGI::Cookie;
 use CGI::Application::Plugin::Apache qw(:all);
-use Apache::Cookie;
+our $MP2;
+my $APACHE_COOKIE_CLASS = $MP2 ? 'Apache2::Cookie' : 'Apache::Cookie';
 
-my $content = "<h1>HELLO THERE</h1>";
+BEGIN {
+    $MP2 = $ENV{MOD_PERL_API_VERSION} == 2;
+    if( $MP2 ) {
+        require Apache2::Cookie;
+        import Apache2::Cookie ();
+    } else {
+        require Apache::Cookie;
+        import Apache::Cookie ();
+    }
+};
 
 sub setup {
     my $self = shift;
@@ -15,6 +24,8 @@ sub setup {
     $self->run_modes([qw(
         query_obj
         header
+        no_header
+        invalid_header
         redirect
         redirected_to
         redirect_cookie
@@ -28,18 +39,29 @@ sub setup {
     )]);
 }
 
+sub no_header {
+    my $self = shift;
+    $self->header_type('none');
+    print "Content-Type: text/html\n\n";
+    print "Im in runmode no_header";
+    return '';
+}
+
+sub invalid_header {
+    my $self = shift;
+    $self->header_type('invalid');
+    return "Im in runmode invalid_header";
+}
+
 sub query_obj {
     my $self = shift;
-    return $content
-        . "<h3>Im in runmode query_obj</h3>"
-        . "obj is " . ref($self->query);
+    return "Im in runmode query_obj. obj is " . ref($self->query);
 }
 
 sub header {
     my $self = shift;
     $self->header_type('header');
-    return $content
-        . "<h3>Im in runmode header</h3>";
+    return "Im in runmode header";
 }
 
 sub redirect {
@@ -48,20 +70,19 @@ sub redirect {
     $self->header_props(
         -uri => '/mp?rm=redirected_to',
     );
-    return $content
-        . "<h3>Im in runmode redirect (should never see me)</h3>";
+    return "Im in runmode redirect (should never see me)";
 }
 
 sub redirected_to {
     my $self = shift;
     $self->header_type('header');
-    my %cookies = Apache::Cookie->fetch();
+    my %cookies = $APACHE_COOKIE_CLASS->fetch();
+    my $content = "";
     if($cookies{redirect_cookie}) {
         my $value = $cookies{redirect_cookie}->value;
         $content .= " cookie value = '$value'";
     }
-    return $content
-        . "<h3>Im in runmode redirect2</h3>";
+    return "Im in runmode redirect2. $content";
 }
 
 sub redirect_cookie {
@@ -70,14 +91,13 @@ sub redirect_cookie {
     $self->header_props(
         -uri => '/mp?rm=redirected_to',
     );
-    my $cookie = Apache::Cookie->new(
-        $self->query,
-        -name    => 'redirect_cookie',
-        -value   => 'mmmm',
+    my $cookie = $APACHE_COOKIE_CLASS->new(
+        $self->query, 
+        -name   => 'redirect_cookie', 
+        -value  => 'mmmm',
     );
     $cookie->bake;
-    return $content 
-        . "<h3>Im in runmode redirect_cookie</h3>";
+    return "Im in runmode redirect_cookie";
 }
 
 sub add_header {
@@ -86,8 +106,7 @@ sub add_header {
     $self->header_add(
         -me => 'Myself and I', 
     );
-    return $content
-        . "<h3>Im in runmode add_header</h3>";
+    return "Im in runmode add_header";
 }
 
 sub cgi_cookie {
@@ -100,14 +119,13 @@ sub cgi_cookie {
     $self->header_add(
         -cookie => $cookie,
     );
-    return $content
-        . "<h3>Im in runmode cgi_cookie</h3>";
+    return "Im in runmode cgi_cookie";
 }
 
 sub apache_cookie {
     my $self = shift;
     $self->header_type('header');
-    my $cookie = Apache::Cookie->new(
+    my $cookie = $APACHE_COOKIE_CLASS->new(
         $self->query,
         -name    => 'apache_cookie',
         -value   => 'yummier',
@@ -115,21 +133,19 @@ sub apache_cookie {
     $self->header_add(
         -cookie => $cookie,
     );
-    return $content
-        . "<h3>Im in runmode apache_cookie</h3>";
+    return "Im in runmode apache_cookie";
 }
 
 sub baking_apache_cookie {
     my $self = shift;
     $self->header_type('header');
-    my $cookie = Apache::Cookie->new(
+    my $cookie = $APACHE_COOKIE_CLASS->new(
         $self->query,
         -name    => 'baked_cookie',
         -value   => 'yummiest',
     );
     $cookie->bake;
-    return $content
-        . "<h3>Im in runmode baking_apache_cookie</h3>";
+    return "Im in runmode baking_apache_cookie";
 }
 
 sub cgi_and_apache_cookies {
@@ -139,7 +155,7 @@ sub cgi_and_apache_cookies {
         -name    => 'cgi_cookie',
         -value   => 'yum:both',
     );
-    my $cookie2 = Apache::Cookie->new(
+    my $cookie2 = $APACHE_COOKIE_CLASS->new(
         $self->query,
         -name    => 'apache_cookie',
         -value   => 'yummier:both',
@@ -147,8 +163,7 @@ sub cgi_and_apache_cookies {
     $self->header_props(
         -cookie => [$cookie2, $cookie1],
     );
-    return $content
-        . "<h3>Im in runmode cgi_and_apache_cookies</h3>";
+    return "Im in runmode cgi_and_apache_cookies";
 }
 
 sub cgi_and_baked_cookies {
@@ -158,7 +173,7 @@ sub cgi_and_baked_cookies {
         -name    => 'cgi_cookie',
         -value   => 'yum:both',
     );
-    my $cookie2 = Apache::Cookie->new(
+    my $cookie2 = $APACHE_COOKIE_CLASS->new(
         $self->query,
         -name    => 'baked_cookie',
         -value   => 'yummiest:both',
@@ -167,8 +182,7 @@ sub cgi_and_baked_cookies {
         -cookie => $cookie1,
     );
     $cookie2->bake;
-    return $content
-        . "<h3>Im in runmode cgi_and_baked_cookies</h3>";
+    return "Im in runmode cgi_and_baked_cookies";
 }
 
 sub cookies {
@@ -183,8 +197,7 @@ sub cookies {
         -value   => 'tasty',
     );
     $self->header_props( -cookie => [ $cookie1, $cookie2 ]);
-    return $content
-        . "<h3>Im in runmode cookies</h3>";
+    return "Im in runmode cookies";
 }
 
 1;

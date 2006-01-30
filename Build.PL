@@ -3,25 +3,32 @@ use Module::Build;
 my $build_pkg = eval { require Apache::TestMB }
       ? 'Apache::TestMB' : 'Module::Build';
 
+# find out if they want to install for mod_perl 2
+my $MP2 = 0;
+foreach my $arg (@ARGV) {
+    if( $arg =~ /^MP2=([\S]*)/ ) {
+        $MP2 = $1;
+    }
+}
+
+
 my $build = $build_pkg->new(
 	module_name         => 'CGI::Application::Plugin::Apache',
 	license             => 'perl',
 	requires            => {
-		    'CGI::Application'  => 3.22,
-		    'Exporter'          => 0,
-#            'Apache'            => 0,
-            'Test::More'        => 0,
-            'Apache::Request'   => 0,
-            'Apache::Cookie'    => 0,
-#            'Apache::Constants' => 0,
-            'Apache::URI'       => 0,
+            'CGI::Application'                              => 3.22,
+            'Exporter'                                      => 0,
+            'Test::More'                                    => 0,
+            $MP2 ? 'Apache2::Request' : 'Apache::Request'   => 0,
+            $MP2 ? 'Apache2::Cookie'  : 'Apache::Cookie'    => 0,
+            $MP2 ? 'Apache2::URI'     : 'Apache::URI'       => 0,
             'HTML::GenerateUtil'=> 0,
-		    },
+	},
     build_requires      => {
-            'CGI::Cookie'       => 0,
-            
-            },
-	create_makefile_pl  => 'passthrough',
-	create_readme       => 1,
-	);
+        'CGI::Cookie'       => 0,
+        'CGI'               => 0,
+    },
+    create_makefile_pl  => 'passthrough',
+    create_readme       => 1,
+);
 $build->create_build_script();

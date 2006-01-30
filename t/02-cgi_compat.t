@@ -106,7 +106,7 @@ Apache::TestRequest::user_agent( cookie_jar => {});
         ),
         "$scheme://$addr:$port"
     );
-    $form->value(test_file => catfile($serverroot, 'cgi_compat.t'));
+    $form->value(test_file => catfile($serverroot, '02-cgi_compat.t'));
     my $request = $form->make_request();
     $response = LWP::UserAgent->new()->request($form->make_request);
     $content = $response->content();

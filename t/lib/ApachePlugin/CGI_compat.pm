@@ -2,10 +2,8 @@ package ApachePlugin::CGI_compat;
 use base 'CGI::Application';
 use strict;
 use warnings;
-use Apache::Reload;
 use CGI::Cookie;
 use CGI::Application::Plugin::Apache qw(:all);
-use Apache::Request;
 
 my $content = "<h1>HELLO THERE</h1>";
 

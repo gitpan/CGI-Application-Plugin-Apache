@@ -6,10 +6,10 @@ Makefile.PL
 MANIFEST			This list of files
 META.yml
 README
-t/cgi.t
-t/cgi_compat.t
+t/01-cgi.t
+t/02-cgi_compat.t
+t/03-mod_perl.t
 t/conf/extra.conf.in
 t/lib/ApachePlugin/CGI.pm
 t/lib/ApachePlugin/CGI_compat.pm
 t/lib/ApachePlugin/MP.pm
-t/mod_perl.t

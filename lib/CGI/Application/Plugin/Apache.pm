@@ -1,26 +1,26 @@
 package CGI::Application::Plugin::Apache;
 use strict;
 use base 'Exporter';
-use Apache::Request;
 
-$CGI::Application::Plugin::Apache::VERSION = '0.10';
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
-my $MP2;
+our $VERSION = '0.11';
+our $MP2;
 
 BEGIN {
     # only do stuff if we are running under mod_perl
     if( $ENV{MOD_PERL} ) {
         @EXPORT_OK      = qw(handler cgiapp_get_query _send_headers);
         %EXPORT_TAGS    = (all => \@EXPORT_OK);
-        require mod_perl;
-        $MP2 = $mod_perl::VERSION >= 1.99 ? 1 : 0;
+        $MP2 = $ENV{MOD_PERL_API_VERSION} == 2;
         # if we are under mod_perl 2
         if( $MP2 ) {
-            require Apache::Const;
-            require Apache::RequestRec;
-            Apache::Const->import(-compile => qw(OK REDIRECT))
+            require Apache2::Const;
+            require Apache2::RequestRec;
+            require Apache2::Request;
+            Apache2::Const->import(-compile => qw(OK REDIRECT))
         } else {
             require Apache::Constants;
+            require Apache::Request;
             Apache::Constants->import(qw(OK REDIRECT))
         }
     } else {
@@ -30,27 +30,37 @@ BEGIN {
 }
 
 sub handler : method {
-    my ($self, $r) = @_;
-    $self->new()->run();
+    my ($class, $r) = @_;
+    # run it with our new query object
+    $class->new(QUERY => _get_apreq($r))->run();
+
+    # return the appropriate code
     if( $MP2 ) {
-        return Apache::OK();
+        return Apache2::Const::OK();
     } else {
         return Apache::Constants::OK();
     }
 }
 
-sub cgiapp_get_query {
-    my $self = shift;
-    my $r = Apache->request();
-    # if we are in compatibility mode
+# get the appropriate query object based on CAPA_CGI_Compat
+# and mod_perl 1/2
+sub _get_apreq {
+    my $r = shift;
     my $query;
     if(lc($r->dir_config('CAPA_CGI_Compat')) eq 'on') {
         require CGI::Application::Plugin::Apache::Request;
         $query = CGI::Application::Plugin::Apache::Request->new( $r );
     } else {
-        $query = Apache::Request->new( $r );
+        $query = $MP2 ? Apache2::Request->new($r) : Apache::Request->new($r);
     }
     return $query;
+}
+
+# override C::A's loading of CGI.pm
+sub cgiapp_get_query {
+    my $self = shift;
+    my $r = $MP2 ? Apache2::RequestUtil::request() : Apache->request();
+    return _get_apreq($r);
 }
 
 sub _send_headers {
@@ -62,7 +72,7 @@ sub _send_headers {
     # if we are redirecting set the status
     if($header_type eq 'redirect') {
         if( $MP2 ) {
-            $q->status(Apache::REDIRECT());
+            $q->status(Apache2::Const::REDIRECT());
         } else {
             $q->status(Apache::Constants::REDIRECT());
         }
@@ -70,13 +80,15 @@ sub _send_headers {
     # if we are redirecting try and do it with header_out
     if ( $header_type eq 'redirect' || $header_type eq 'header' ) {
         # if we have any header props then use our CGI compat to handle them
-        if( scalar(%props) ) {
+        if( scalar(keys %props) ) {
             _handle_cgi_header_props($q, %props);
         } else {
             # else use to Apache send the header
             if( $MP2 ) {
                 $q->content_type('text/html')
                     unless $q->content_type();
+            } elsif( $q->content_type() ) {
+                $q->send_http_header()
             } else {
                 $q->send_http_header('text/html')
             }
@@ -307,9 +319,10 @@ CGI::Application::Plugin::Apache - Allow CGI::Application to use Apache::* modul
 =head1 DESCRIPTION
 
 This plugin helps to try and fix some of the annoyances of using L<CGI::Application> in
-a pure mod_perl (1.0 or 2.0) environment. L<CGI::Application> assumes that you use L<CGI.pm|CGI>, but I wanted
-to avoid it's bloat and have access to the performance of the Apache::* modules so along
-came this plugin. At the current moment it only does two things:
+a pure mod_perl (1.0 or 2.0) environment (see L<INSTALLATION> for specific issues regarding
+installation under mod_perl 2.x). L<CGI::Application> assumes that you use L<CGI.pm|CGI>, 
+but I wanted to avoid it's bloat and have access to the performance of the Apache::* modules 
+so along came this plugin. At the current moment it only does two things:
 
 =over
 
@@ -450,11 +463,22 @@ environment setting and branch accordingly. For example, to set a cookie:
 If for some reason you are using this plugin in a non-mod_perl environment, it will try to 
 do the right thing by simply doing nothing :)
 
+=head1 INSTALLATION
+
+This module is designed to function equally under mod_perl 1.x and mod_perl 2.x. The only real
+issue comes during the installation and testing phase. In order to track dependencies, etc we
+need to know which version you are trying to install this for. By default we assume mod_perl 1.x.
+If you want to change this, you simple pass a C<< MP2 >> option to the C<< Build.PL >> script.
+
+  perl ./Build.PL MP2=1
+
+That's pretty easy, right?
+
 =head1 AUTHOR
                                                                                                                                            
 Michael Peters <mpeters@plusthree.com>
 
-Thanks to Plus Three, LLC (http://www.plusthree.com) for sponsoring my work on this module
+Thanks to Plus Three, LP (http://www.plusthree.com) for sponsoring my work on this module
 
 =head1 CONTRIBUTORS
 
