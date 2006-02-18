@@ -1,6 +1,6 @@
 ---
 name: CGI-Application-Plugin-Apache
-version: 0.11
+version: 0.12
 author:
   - Michael Peters <mpeters@plusthree.com>
 abstract: Allow CGI::Application to use Apache::* modules without interference
@@ -21,7 +21,7 @@ build_requires:
 provides:
   CGI::Application::Plugin::Apache:
     file: lib/CGI/Application/Plugin/Apache.pm
-    version: 0.11
+    version: 0.12
   CGI::Application::Plugin::Apache::Request:
     file: lib/CGI/Application/Plugin/Apache/Request.pm
 generated_by: Module::Build version 0.2703

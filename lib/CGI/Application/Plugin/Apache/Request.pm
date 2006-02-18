@@ -1,34 +1,25 @@
 package CGI::Application::Plugin::Apache::Request;
 use strict;
+use base 'Apache::Request';
+use Apache::Cookie;
+use Apache::URI;
 use HTML::GenerateUtil;
-our $MP2;
-our @ISA;
+
+my $MP2;
+
 BEGIN {
     # only do stuff if we are running under mod_perl
     if( $ENV{MOD_PERL} ) {
-        $MP2 = $ENV{MOD_PERL_API_VERSION} == 2;
-        # if we are under mod_perl 2.x
+        require mod_perl;
+        $MP2 = $mod_perl::VERSION >= 1.99 ? 1 : 0;
+        # if we are under mod_perl 2
         if( $MP2 ) {
-            require Apache2::Request;
-            push(@ISA, 'Apache2::Request');
-            require Apache2::Cookie;
-            import Apache2::Cookie ();
-            require Apache2::URI;
-            import Apache2::URI ();
-            require Apache2::Upload;
-            import Apache2::Upload ();
-        # else we are under mod_perl 1.x
+            require Apache::Upload;
+            import Apache::Upload ();
         } else {
-            require Apache::Request;
-            push(@ISA, 'Apache::Request');
-            require Apache::Cookie;
-            import Apache::Cookie ();
-            require Apache::URI;
-            import Apache::URI ();
         }
     }
 }
-
 
 
 sub new {
@@ -94,13 +85,15 @@ sub cookie {
     my ($self, @args) = @_;
     if($#args == 0) {
         # if we just have a name of a cookie then retrieve the value of the cookie
-        my $cookies = $MP2 ? Apache2::Cookie->fetch() : Apache::Cookie->fetch();
-        return $cookies->{$args[0]}->value;
+        my $cookies = Apache::Cookie->fetch();
+        if( $cookies && $cookies->{$args[0]} ) {
+            return $cookies->{$args[0]}->value;
+        } else {
+            return;
+        }
     } else {
         # else we have several values so try and create a new cookie
-        return $MP2 ? 
-            Apache2::Cookie->new($self, @args)
-            : Apache::Cookie->new($self, @args);
+        return Apache::Cookie->new($self, @args);
     }
 }
 
@@ -175,7 +168,12 @@ sub upload {
     my ($self, $file) = @_;
     # if they want a specific one, then lets give them the file handle
     if( $file ) {
-        return $self->SUPER::upload($file)->fh();
+        my $upload = $self->SUPER::upload($file);
+        if( $upload ) {
+            return $upload->fh();
+        } else {
+            return;
+        }
     # else they want them all
     } else {
         my @files = $self->SUPER::upload();

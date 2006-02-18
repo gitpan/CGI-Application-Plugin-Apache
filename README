@@ -183,6 +183,20 @@ COMPATIBILITY
     environment, it will try to do the right thing by simply doing nothing
     :)
 
+  CGI::Application::Plugin::Apache::Request
+
+    Sometimes the default compatability is not enough. For instance, if you
+    are using plugins that use the cookies or upload features of CGI.pm then
+    you might need some extra help.
+
+    This is what CGI::Application::Plugin::Apache::Request is for. You can
+    make this your `query' object by setting the `CAPA_CGI_Compat' var to
+    `On' in your Apache config file:
+
+        PerlSetVar CAPA_CGI_Compat On
+
+    Please see that module for more documentation on what it does.
+
 INSTALLATION
     This module is designed to function equally under mod_perl 1.x and
     mod_perl 2.x. The only real issue comes during the installation and

@@ -3,7 +3,7 @@ use strict;
 use base 'Exporter';
 
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 our $MP2;
 
 BEGIN {
@@ -462,6 +462,20 @@ environment setting and branch accordingly. For example, to set a cookie:
 
 If for some reason you are using this plugin in a non-mod_perl environment, it will try to 
 do the right thing by simply doing nothing :)
+
+=head2 CGI::Application::Plugin::Apache::Request
+
+Sometimes the default compatability is not enough. For instance, if you are using
+plugins that use the cookies or upload features of L<CGI.pm|CGI> then you might
+need some extra help.
+
+This is what L<CGI::Application::Plugin::Apache::Request> is for. You can make this
+your C<query> object by setting the C<CAPA_CGI_Compat> var to C<On> in your Apache
+config file:
+
+    PerlSetVar CAPA_CGI_Compat On
+
+Please see that module for more documentation on what it does.
 
 =head1 INSTALLATION
 
