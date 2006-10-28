@@ -3,7 +3,7 @@ use strict;
 use base 'Exporter';
 
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 our $MP2;
 
 BEGIN {
@@ -11,7 +11,9 @@ BEGIN {
     if( $ENV{MOD_PERL} ) {
         @EXPORT_OK      = qw(handler cgiapp_get_query _send_headers);
         %EXPORT_TAGS    = (all => \@EXPORT_OK);
-        $MP2 = $ENV{MOD_PERL_API_VERSION} == 2;
+        $MP2 = defined $ENV{MOD_PERL_API_VERSION} ?
+            $ENV{MOD_PERL_API_VERSION} == 2
+            : 0;
         # if we are under mod_perl 2
         if( $MP2 ) {
             require Apache2::Const;

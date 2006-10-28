@@ -1,5 +1,8 @@
 Revision history for Perl extension CGI::Application::Plugin::Apache
 
+0.13
+    - fixed warning about unitialized ENV var
+
 0.12
     - minor bug fixes in the compatability layer for cookies and uploads
     - added docs mentioning CPAP_CGI_Compat and linking to 
