@@ -3,7 +3,7 @@ use strict;
 use base 'Exporter';
 
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
-our $VERSION = '0.13';
+our $VERSION = '1.00';
 our $MP2;
 
 BEGIN {
@@ -61,7 +61,7 @@ sub _get_apreq {
 # override C::A's loading of CGI.pm
 sub cgiapp_get_query {
     my $self = shift;
-    my $r = $MP2 ? Apache2::RequestUtil::request() : Apache->request();
+    my $r = $MP2 ? Apache2::RequestUtil->request() : Apache->request();
     return _get_apreq($r);
 }
 
