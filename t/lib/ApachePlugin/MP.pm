@@ -4,17 +4,19 @@ use strict;
 use warnings;
 use CGI::Cookie;
 use CGI::Application::Plugin::Apache qw(:all);
-our $MP2;
-my $APACHE_COOKIE_CLASS = $MP2 ? 'Apache2::Cookie' : 'Apache::Cookie';
+my $MP2;
+my $APACHE_COOKIE_CLASS;
 
 BEGIN {
     $MP2 = $ENV{MOD_PERL_API_VERSION} == 2;
     if( $MP2 ) {
         require Apache2::Cookie;
         import Apache2::Cookie ();
+        $APACHE_COOKIE_CLASS = 'Apache2::Cookie';
     } else {
         require Apache::Cookie;
         import Apache::Cookie ();
+        $APACHE_COOKIE_CLASS = 'Apache::Cookie';
     }
 };
 
@@ -96,7 +98,7 @@ sub redirect_cookie {
         -name   => 'redirect_cookie', 
         -value  => 'mmmm',
     );
-    $cookie->bake;
+    $cookie->bake($self->query);
     return "Im in runmode redirect_cookie";
 }
 
@@ -144,7 +146,7 @@ sub baking_apache_cookie {
         -name    => 'baked_cookie',
         -value   => 'yummiest',
     );
-    $cookie->bake;
+    $cookie->bake($self->query);
     return "Im in runmode baking_apache_cookie";
 }
 
@@ -181,7 +183,7 @@ sub cgi_and_baked_cookies {
     $self->header_props(
         -cookie => $cookie1,
     );
-    $cookie2->bake;
+    $cookie2->bake($self->query);
     return "Im in runmode cgi_and_baked_cookies";
 }
 

@@ -3,19 +3,18 @@ use strict;
 use base 'Exporter';
 
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
-our $VERSION = '1.00';
-our $MP2;
+our $VERSION = '1.01';
 
 BEGIN {
+    use constant MP => exists($ENV{MOD_PERL});
+    use constant MP2 =>
+      (MP() and exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} == 2);
     # only do stuff if we are running under mod_perl
-    if( $ENV{MOD_PERL} ) {
+    if( MP ) {
         @EXPORT_OK      = qw(handler cgiapp_get_query _send_headers);
         %EXPORT_TAGS    = (all => \@EXPORT_OK);
-        $MP2 = defined $ENV{MOD_PERL_API_VERSION} ?
-            $ENV{MOD_PERL_API_VERSION} == 2
-            : 0;
         # if we are under mod_perl 2
-        if( $MP2 ) {
+        if( MP2() ) {
             require Apache2::Const;
             require Apache2::RequestRec;
             require Apache2::Request;
@@ -37,7 +36,7 @@ sub handler : method {
     $class->new(QUERY => _get_apreq($r))->run();
 
     # return the appropriate code
-    if( $MP2 ) {
+    if( MP2() ) {
         return Apache2::Const::OK();
     } else {
         return Apache::Constants::OK();
@@ -50,10 +49,15 @@ sub _get_apreq {
     my $r = shift;
     my $query;
     if(lc($r->dir_config('CAPA_CGI_Compat')) eq 'on') {
-        require CGI::Application::Plugin::Apache::Request;
-        $query = CGI::Application::Plugin::Apache::Request->new( $r );
+        if( MP2() ) {
+            require CGI::Application::Plugin::Apache2::Request;
+            $query = CGI::Application::Plugin::Apache2::Request->new( $r );
+        } else {
+            require CGI::Application::Plugin::Apache::Request;
+            $query = CGI::Application::Plugin::Apache::Request->new( $r );
+        }
     } else {
-        $query = $MP2 ? Apache2::Request->new($r) : Apache::Request->new($r);
+        $query = MP2() ? Apache2::Request->new($r) : Apache::Request->new($r);
     }
     return $query;
 }
@@ -61,7 +65,7 @@ sub _get_apreq {
 # override C::A's loading of CGI.pm
 sub cgiapp_get_query {
     my $self = shift;
-    my $r = $MP2 ? Apache2::RequestUtil->request() : Apache->request();
+    my $r = MP2() ? Apache2::RequestUtil->request() : Apache->request();
     return _get_apreq($r);
 }
 
@@ -73,7 +77,7 @@ sub _send_headers {
                                                                                                                                        
     # if we are redirecting set the status
     if($header_type eq 'redirect') {
-        if( $MP2 ) {
+        if( MP2() ) {
             $q->status(Apache2::Const::REDIRECT());
         } else {
             $q->status(Apache::Constants::REDIRECT());
@@ -86,7 +90,7 @@ sub _send_headers {
             _handle_cgi_header_props($q, %props);
         } else {
             # else use to Apache send the header
-            if( $MP2 ) {
+            if( MP2() ) {
                 $q->content_type('text/html')
                     unless $q->content_type();
             } elsif( $q->content_type() ) {
@@ -147,7 +151,7 @@ sub _handle_cgi_header_props {
         my(@cookie) = ref($cookie) && ref($cookie) eq 'ARRAY' ? @{$cookie} : $cookie;
         foreach (@cookie) {
             my $cs = '';
-            if( UNIVERSAL::isa($_,'CGI::Cookie') || UNIVERSAL::isa($_,'Apache::Cookie') ) {
+            if( UNIVERSAL::isa($_,'CGI::Cookie') || (MP2() ? UNIVERSAL::isa($_, 'Apache2::Cookie') : UNIVERSAL::isa($_,'Apache::Cookie') ) ) {
                 $cs = $_->as_string;
             } else {
                 $cs = $_;
@@ -169,7 +173,7 @@ sub _handle_cgi_header_props {
     foreach my $key (keys %$other) {
         $q->headers_out->{ucfirst($key)} = $other->{$key};
     }
-    $q->send_http_header() unless($MP2);
+    $q->send_http_header() unless(MP2());
     return '';
 }
 
@@ -483,7 +487,9 @@ Please see that module for more documentation on what it does.
 
 This module is designed to function equally under mod_perl 1.x and mod_perl 2.x. The only real
 issue comes during the installation and testing phase. In order to track dependencies, etc we
-need to know which version you are trying to install this for. By default we assume mod_perl 1.x.
+need to know which version you are trying to install this for. By default we assume mod_perl 1.x
+unless we find mod_perl 2 installed on your system.
+
 If you want to change this, you simple pass a C<< MP2 >> option to the C<< Build.PL >> script.
 
   perl ./Build.PL MP2=1
@@ -520,9 +526,9 @@ The following people have contributed to this module either through docs, code, 
                                                                                                                                            
 =item * L<Apache>
 
-=item * L<Apache::Request>
+=item * L<Apache::Request> / L<Apache2::Request>
 
-=item * L<Apache::Cookie>
+=item * L<Apache::Cookie> / L<Apache2::Cookie>
                                                                                                                                            
 =back
                                                                                                                                            

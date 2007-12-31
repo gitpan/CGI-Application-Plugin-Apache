@@ -1,5 +1,8 @@
 Revision history for Perl extension CGI::Application::Plugin::Apache
 
+1.01
+    - Fixed lots of compatability problems with mod_perl 2 and Apache2::Request
+
 1.00
     - fixed misuage of Apache2::RequestUtil
 

@@ -197,8 +197,10 @@ INSTALLATION
     mod_perl 2.x. The only real issue comes during the installation and
     testing phase. In order to track dependencies, etc we need to know which
     version you are trying to install this for. By default we assume
-    mod_perl 1.x. If you want to change this, you simple pass a "MP2" option
-    to the "Build.PL" script.
+    mod_perl 1.x unless we find mod_perl 2 installed on your system.
+
+    If you want to change this, you simple pass a "MP2" option to the
+    "Build.PL" script.
 
       perl ./Build.PL MP2=1
 
@@ -222,8 +224,8 @@ CONTRIBUTORS
 SEE ALSO
     * CGI::Application
     * Apache
-    * Apache::Request
-    * Apache::Cookie
+    * Apache::Request / Apache2::Request
+    * Apache::Cookie / Apache2::Cookie
 
 LICENSE
     This library is free software; you can redistribute it and/or modify it

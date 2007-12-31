@@ -27,5 +27,6 @@
     eval "use Module::Build::Compat 0.02; 1" or die $@;
     
     Module::Build::Compat->run_build_pl(args => \@ARGV);
-    require Apache::TestMB;
-    Module::Build::Compat->write_makefile(build_class => 'Apache::TestMB');
+    my $build_pkg = eval { require Apache::TestMB }
+          ? 'Apache::TestMB' : 'Module::Build';
+    Module::Build::Compat->write_makefile(build_class => $build_pkg)

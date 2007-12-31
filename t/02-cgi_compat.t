@@ -19,7 +19,7 @@ Apache::TestRequest::user_agent( cookie_jar => {});
     ok($response->is_success);
     $content = $response->content();
     ok($content =~ /in runmode query_obj/);
-    ok($content =~ /obj is CGI::Application::Plugin::Apache::Request/);
+    ok($content =~ /obj is CGI::Application::Plugin::Apache\d?::Request/);
 }
 
 # 4..9
@@ -112,6 +112,7 @@ Apache::TestRequest::user_agent( cookie_jar => {});
     $content = $response->content();
     ok($content =~ /in runmode upload/);
     ok($content =~ /file_name = .*cgi_compat\.t/);
-    ok($content =~ /file_handle = Apache::Upload=GLOB/);
+    ok($content =~ /file_handle = (Apache::Upload=)?GLOB/);
 }
+
 

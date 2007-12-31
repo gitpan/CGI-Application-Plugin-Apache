@@ -16,7 +16,7 @@ my $content;
     ok($response->is_success);
     $content = $response->content();
     ok($content =~ /in runmode query_obj/);
-    ok($content =~ /obj is Apache::Request/);
+    ok($content =~ /obj is Apache\d?::Request/);
 }
 
 # 4..6

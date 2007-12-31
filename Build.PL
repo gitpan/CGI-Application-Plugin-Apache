@@ -5,12 +5,16 @@ my $build_pkg = eval { require Apache::TestMB }
 
 # find out if they want to install for mod_perl 2
 my $MP2 = 0;
-foreach my $arg (@ARGV) {
-    if( $arg =~ /^MP2=([\S]*)/ ) {
-        $MP2 = $1;
+if( eval "require Apache2::URI; 1" ) {
+    # assume they want mod_perl 2 if it's installed
+    $MP2 = 1;
+} else {
+    foreach my $arg (@ARGV) {
+        if( $arg =~ /^MP2=([\S]*)/ ) {
+            $MP2 = $1;
+        }
     }
 }
-
 
 my $build = $build_pkg->new(
 	module_name         => 'CGI::Application::Plugin::Apache',
@@ -25,8 +29,7 @@ my $build = $build_pkg->new(
             'HTML::GenerateUtil'=> 0,
 	},
     build_requires      => {
-        'CGI::Cookie'       => 0,
-        'CGI'               => 0,
+        'Apache::Test',
     },
     create_makefile_pl  => 'passthrough',
     create_readme       => 1,
