@@ -1,31 +1,36 @@
 ---
-name: CGI-Application-Plugin-Apache
-version: 1.01
+abstract: 'Allow CGI::Application to use Apache::* modules without interference'
 author:
   - 'Michael Peters <mpeters@plusthree.com>'
-abstract: Allow CGI::Application to use Apache::* modules without interference
+build_requires:
+  Apache::Test: 1
+configure_requires:
+  Module::Build: 0.38
+dynamic_config: 1
+generated_by: 'Module::Build version 0.38, CPAN::Meta::Converter version 2.110930'
 license: perl
-resources:
-  license: http://dev.perl.org/licenses/
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: CGI-Application-Plugin-Apache
+provides:
+  CGI::Application::Plugin::Apache:
+    file: lib/CGI/Application/Plugin/Apache.pm
+    version: 1.02
+  CGI::Application::Plugin::Apache2::Request:
+    file: lib/CGI/Application/Plugin/Apache2/Request.pm
+    version: 0
+  CGI::Application::Plugin::Apache::Request:
+    file: lib/CGI/Application/Plugin/Apache/Request.pm
+    version: 0
 requires:
-  Apache2::Cookie: 0
-  Apache2::Request: 0
-  Apache2::URI: 0
+  Apache::Cookie: 0
+  Apache::Request: 0
+  Apache::URI: 0
   CGI::Application: 3.22
   Exporter: 0
   HTML::GenerateUtil: 0
   Test::More: 0
-build_requires:
-  Apache::Test: ~
-provides:
-  CGI::Application::Plugin::Apache:
-    file: lib/CGI/Application/Plugin/Apache.pm
-    version: 1.01
-  CGI::Application::Plugin::Apache2::Request:
-    file: lib/CGI/Application/Plugin/Apache2/Request.pm
-  CGI::Application::Plugin::Apache::Request:
-    file: lib/CGI/Application/Plugin/Apache/Request.pm
-generated_by: Module::Build version 0.2808
-meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+resources:
+  license: http://dev.perl.org/licenses/
+version: 1.02

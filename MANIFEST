@@ -14,3 +14,4 @@ t/conf/extra.conf.in
 t/lib/ApachePlugin/CGI.pm
 t/lib/ApachePlugin/CGI_compat.pm
 t/lib/ApachePlugin/MP.pm
+META.json
